@@ -1,5 +1,9 @@
 package br.com.alura.estoque.retrofit;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+
 import br.com.alura.estoque.retrofit.service.ProdutoService;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -33,4 +37,5 @@ public class EstoqueRetrofit {
     public ProdutoService getProdutoService() {
         return produtoService;
     }
+
 }

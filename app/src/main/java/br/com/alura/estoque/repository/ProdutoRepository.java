@@ -1,17 +1,13 @@
 package br.com.alura.estoque.repository;
 
-import android.os.AsyncTask;
-import android.util.Log;
-
 import java.util.List;
 
 import br.com.alura.estoque.asynctask.BaseAsyncTask;
 import br.com.alura.estoque.database.dao.ProdutoDAO;
 import br.com.alura.estoque.model.Produto;
 import br.com.alura.estoque.retrofit.EstoqueRetrofit;
+import br.com.alura.estoque.retrofit.callback.BaseCallback;
 import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class ProdutoRepository {
 
@@ -21,7 +17,7 @@ public class ProdutoRepository {
         this.dao = dao;
     }
 
-    public void buscaProdutos(AdicionaDadosParaAdapter listener) {
+    public void buscaProdutos(DadosCarregadosCallback<List<Produto>> callback) {
 
         /**gostaria que ele iniciasse pegando as info do celular.*/
         new BaseAsyncTask<>(
@@ -29,47 +25,73 @@ public class ProdutoRepository {
                 resultado -> {
                     /**interface que ira receber uma atualizacao do adapter
                      * o motivo de estar fazendo isso é pq o adapter faz parte da UI da activity*/
-                    listener.quandoFinalizado(resultado);
+                    callback.quandoSalvo(resultado);
 
                     /**Ao terminar de buscar pelos dados internos, ele inicia a busca da API*/
-                    buscaPorProdutosBancoDeDadosExterno(listener);
+                    buscaPorProdutosBancoDeDadosExterno(callback);
                 })
                 .execute();
 
 
     }
 
-    public void buscaPorProdutosBancoDeDadosExterno(AdicionaDadosParaAdapter listener) {
+    private void buscaPorProdutosBancoDeDadosExterno(DadosCarregadosCallback<List<Produto>> callback) {
         Call<List<Produto>> call = new EstoqueRetrofit().getProdutoService().lista();
 
-        call.enqueue(new Callback<List<Produto>>() {
+        call.enqueue(new BaseCallback<>(new BaseCallback.DadosCarregadosCallback<List<Produto>>() {
             @Override
-            public void onResponse(Call<List<Produto>> call, Response<List<Produto>> response) {
-
-                /**lista do servidor.*/
-                List<Produto> produtos = response.body();
-                buscaProdutoBancoDeDadosInterno(produtos, listener);
-
+            public void quandoSucesso(List<Produto> result) {
+                buscaProdutoBancoDeDadosInterno(result, callback);
             }
 
             @Override
-            public void onFailure(Call<List<Produto>> call, Throwable t) {
-                Log.e("Error", t.getMessage());
+            public void quandoErro(String erro) {
+                callback.quandoFalha(erro);
             }
-        });
+        }));
+
+
     }
 
-    private void buscaProdutoBancoDeDadosInterno(List<Produto> produtos, AdicionaDadosParaAdapter listener) {
+    private void buscaProdutoBancoDeDadosInterno(List<Produto> produtos, DadosCarregadosCallback<List<Produto>> callback) {
         /**adiciono para o banco de dados em uma asynctask (outra)*/
         new BaseAsyncTask<>(() -> {
             dao.salvaLista(produtos);
             return dao.buscaTodos();
-        }, produtosAtualizados ->
-                listener.quandoFinalizado(produtosAtualizados)
+        }, callback::quandoSalvo
         ).execute();
     }
 
-    public interface AdicionaDadosParaAdapter {
-        void quandoFinalizado(List<Produto> listener);
+    public void salva(Produto produto, DadosCarregadosCallback<Produto> callback) {
+
+        Call<Produto> call = new EstoqueRetrofit().getProdutoService().salva(produto);
+        call.enqueue(new BaseCallback<>(new BaseCallback.DadosCarregadosCallback<Produto>() {
+            @Override
+            public void quandoSucesso(Produto result) {
+                adicionaInternamente(result, callback);
+            }
+
+            @Override
+            public void quandoErro(String erro) {
+                callback.quandoFalha(erro);
+            }
+        }));
+
+
+    }
+
+    private void adicionaInternamente(Produto produtoDaApi, DadosCarregadosCallback<Produto> callback) {
+        new BaseAsyncTask<>(() -> {
+            long id = dao.salva(produtoDaApi);
+            return dao.buscaProduto(id);
+        }, callback::quandoSalvo)
+                .execute();
+    }
+
+    public interface DadosCarregadosCallback<T> {
+        void quandoSalvo(T produto);
+
+        void quandoFalha(String mensagem);
+
     }
 }
