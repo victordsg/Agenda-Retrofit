@@ -2,6 +2,7 @@ package br.com.alura.estoque.ui.dialog;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;

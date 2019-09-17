@@ -22,7 +22,7 @@ import br.com.alura.estoque.ui.recyclerview.adapter.ListaProdutosAdapter;
 
 public class ListaProdutosActivity extends AppCompatActivity {
 
-    private static final String TITULO_APPBAR = "Produtos";
+    private static final String TITULO_APPBAR = "Lista de produtos";
     private ListaProdutosAdapter adapter;
     private ProdutoDAO dao;
     private ProdutoRepository repository;

@@ -58,10 +58,10 @@ public class ListaProdutosAdapter extends
     }
 
     public void atualiza(List<Produto> produtos) {
-        notifyItemRangeChanged(0, this.produtos.size());
+
         this.produtos.clear();
         this.produtos.addAll(produtos);
-        this.notifyItemRangeInserted(0, this.produtos.size());
+        notifyDataSetChanged();
     }
 
     public void adiciona(Produto... produtos) {
